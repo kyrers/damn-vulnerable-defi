@@ -4,6 +4,8 @@ Forked from the [original](https://github.com/tinchoabbate/damn-vulnerable-defi)
 
 [Naive Receiver](#naive-receiver)
 
+[Truster](#truster)
+
 ## UNSTOPPABLE
 
 If you're like me, your first instinct might be to drain the `pool`. 
@@ -25,5 +27,17 @@ We can see that the `flashLoan(...)` function checks that there's enough ETH in 
 Do you see the issue? The `borrower` is passed as a parameter! This means that we can say that the borrower is the `FlashLoanReceiver` contract and request a flashloan of `0 ether`, which will cost the `FlashLoanReceiver` `1 ether` in fees. Do this enough times and the receiver is drained!
 
 To do this in one transaction, we just need to deploy a contract that does the attack for us. You'll find the `Attacker` contract in the same folder as the other challenge contracts.
+
+## Truster
+
+So far, this is the most to the point challenge. We have to drain `1000000 DVL` from the `TrusterLenderPool`. 
+
+Looking at the `flashloan(...)` function we immediately see that it has two strange parameters: `address target` and `bytes calldata data`. Examining further we find that this is a classic flashloan function except that before checking that the loan is repaid, it unexpectedly calls the `target` address using the `data` parameters. Well, this is obviously our way in. 
+
+Since no checks are performed, we can simply say that we want to borrow `0 DVL` tokens, the `target` is the `DVL` token contract and that the `data` is a call to the `approve(...)` function, which allows us to approve a transfer from the pool to ourselves of any amount of the pool `DVL` tokens.
+So two transactions are needed: one to call `flashloan(...)` in order to sneak in that `approve(...)` transaction, and another to `transferFrom()` to send the `DVL`tokens to ourselves.
+
+To do this in one transaction, we just need to deploy a contract that does the attack for us. You'll find the `TrusterAttacker` contract in the same folder as the other challenge contracts.
+
 
 ###### kyrers
