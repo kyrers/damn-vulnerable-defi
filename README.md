@@ -6,6 +6,8 @@ Forked from the [original](https://github.com/tinchoabbate/damn-vulnerable-defi)
 
 [Truster](#truster)
 
+[Side Entrance](#side-entrance)
+
 ## UNSTOPPABLE
 
 If you're like me, your first instinct might be to drain the `pool`. 
@@ -28,7 +30,7 @@ Do you see the issue? The `borrower` is passed as a parameter! This means that w
 
 To do this in one transaction, we just need to deploy a contract that does the attack for us. You'll find the `Attacker` contract in the same folder as the other challenge contracts.
 
-## Truster
+## TRUSTER
 
 So far, this is the most to the point challenge. We have to drain `1000000 DVL` from the `TrusterLenderPool`. 
 
@@ -38,6 +40,16 @@ Since no checks are performed, we can simply say that we want to borrow `0 DVL` 
 So two transactions are needed: one to call `flashloan(...)` in order to sneak in that `approve(...)` transaction, and another to `transferFrom()` to send the `DVL`tokens to ourselves.
 
 To do this in one transaction, we just need to deploy a contract that does the attack for us. You'll find the `TrusterAttacker` contract in the same folder as the other challenge contracts.
+
+## SIDE-ENTRANCE
+
+Once again, we have a `1000 ether` pool that provides free flashloans. Our job is to drain the pool.
+
+Looking at the `SideEntranceLenderPool` contract we can see that it allows users to `deposit` and `withdraw` funds from the pool. Of course, it also allows us to use the `flashloan(...)` function to request a flashloan.
+
+Aside from repaying the flashloan, this `flashloan(...)` function also requires that the borrower implement the `IFlashLoanEtherReceiver` interface, which has the function `execute()` responsible for handling the flashloan funds.
+
+So one thing is for sure, we need to implement an attacker contract that ask for the flashloan and receives it in the `execute()` function. But what do we do with it? Remember the `deposit(...)` and `withdraw(...)` functions? We just `deposit` the funds back in the pool, which will make the flashloan successful and set the funds as the property of our attacker contract, which in turn means we can `withdraw` those funds from the pool.
 
 
 ###### kyrers
