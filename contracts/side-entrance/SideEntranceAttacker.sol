@@ -6,7 +6,7 @@ import "./SideEntranceLenderPool.sol";
 /**
  * @title Attacker
  * @author kyrers
- * @notice This contract performs inherits the needed interface and executes the full attack. We just need to call the attack function.
+ * @notice This contract inherits the needed interface and executes the full attack. We just need to call the attack function.
  */
 
 contract SideEntranceAttacker is IFlashLoanEtherReceiver {
