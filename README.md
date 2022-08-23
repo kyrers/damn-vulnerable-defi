@@ -1,4 +1,5 @@
-Forked from the [original](https://github.com/tinchoabbate/damn-vulnerable-defi) repo built by [damnvulnerabledefi.xyz](https://damnvulnerabledefi.xyz), this repository will contain my solutions and explanations for each challenge, in it's respective file.
+Forked from the [original](https://github.com/tinchoabbate/damn-vulnerable-defi) repo built by [damnvulnerabledefi.xyz](https://damnvulnerabledefi.xyz), this repository will contain my solutions and explanations for each challenge.
+Relevant files are in each respective folder.
 
 [Unstoppable](#unstopabble)
 
@@ -10,6 +11,9 @@ Forked from the [original](https://github.com/tinchoabbate/damn-vulnerable-defi)
 
 [Rewarder](#rewarder)
 
+[Selfie](#selfie)
+
+
 ## UNSTOPPABLE
 
 If you're like me, your first instinct might be to drain the `pool`. 
@@ -20,7 +24,7 @@ The `flashLoan(...)` function first checks that the loan amount is higher than 0
 
 So, the `flashLoan(...)` function will revert in case the loan amount is invalid or the loan isn't repaid. These make sense. 
 However it will fail in one extra scenario - if the actual amount of tokens in the pool differs from the stateful `poolBalance` value, which raises the question: where is the `poolBalance` value updated? 
-It's in the `depositTokens(...)` function of the `pool`, which  was intended as the only way users would deposit tokens in the pool. But, considering our balance of `100 DVL` tokens, what's stopping us from using `transfer` to deposit `1 DVL` token in the pool? 
+It's in the `depositTokens(...)` function of the `pool`, which  was intended as the only way users would deposit tokens in the pool. But, considering our balance of `100 DVT` tokens, what's stopping us from using `transfer` to deposit `1 DVT` token in the pool? 
 
 ## NAIVE-RECEIVER
 
@@ -34,12 +38,12 @@ To do this in one transaction, we just need to deploy a contract that does the a
 
 ## TRUSTER
 
-So far, this is the most to the point challenge. We have to drain `1000000 DVL` from the `TrusterLenderPool`. 
+So far, this is the most to the point challenge. We have to drain `1000000 DVT` from the `TrusterLenderPool`. 
 
 Looking at the `flashloan(...)` function we immediately see that it has two strange parameters: `address target` and `bytes calldata data`. Examining further we find that this is a classic flashloan function except that before checking that the loan is repaid, it unexpectedly calls the `target` address using the `data` parameters. Well, this is obviously our way in. 
 
-Since no checks are performed, we can simply say that we want to borrow `0 DVL` tokens, the `target` is the `DVL` token contract and that the `data` is a call to the `approve(...)` function, which allows us to approve a transfer from the pool to ourselves of any amount of the pool `DVL` tokens.
-So two transactions are needed: one to call `flashloan(...)` in order to sneak in that `approve(...)` transaction, and another to `transferFrom()` to send the `DVL`tokens to ourselves.
+Since no checks are performed, we can simply say that we want to borrow `0 DVT` tokens, the `target` is the `DVT` token contract and that the `data` is a call to the `approve(...)` function, which allows us to approve a transfer from the pool to ourselves of any amount of the pool `DVT` tokens.
+So two transactions are needed: one to call `flashloan(...)` in order to sneak in that `approve(...)` transaction, and another to `transferFrom()` to send the `DVT`tokens to ourselves.
 
 To do this in one transaction, we just need to deploy a contract that does the attack for us. You'll find the `TrusterAttacker` contract in the same folder as the other challenge contracts.
 
@@ -57,10 +61,10 @@ So one thing is for sure, we need to implement an attacker contract that ask for
 
 The first challenge where things get more complex. However, there are several tips in the challenge description which will provide us with a path to find the exploit.
 
-First we find out that there's a pool offering rewards in 5 day increments to users that deposit `DVL` tokens. We also discover that we have no `DVL` tokens, but that there's a pool offering free flashloans. 
+First we find out that there's a pool offering rewards in 5 day increments to users that deposit `DVT` tokens. We also discover that we have no `DVT` tokens, but that there's a pool offering free flashloans. 
 
 Let's look at the `FlashLoanPool` `flashloan(...)` function. It requires that the borrower is a deployed contract with the `receiveFlashLoan(uint256)` function to handle the flashloan. 
-We now have a way of getting the `DVL` tokens, but how do we use them in regards to `TheRewarderPool`?
+We now have a way of getting the `DVT` tokens, but how do we use them in regards to `TheRewarderPool`?
 
 Looking at the pool the first thing we notice is that it uses three tokens: `LiquidityToken`, `AccountingToken` and `RewardToken`. Again, from the challenge description it becomes obvious that we need to get some `RewardToken` tokens. 
 
@@ -70,9 +74,9 @@ It seems that the only way to mint `RewardToken` is inside the `distributeReward
 
 Snapshots are taken earlier in the `distributeRewards(...)` function execution via a call to `_recordSnapshot()`. However, to execute this call we need to pass the verification `isNewRewardsRound()` which checks that at least 5 days have passed since the last snapshot. This means that we need to wait 5 days before calling `distributeRewards(...)`.
 
-That was easy, but we still need to figure out how to get a positive balance of `AccountingToken`. Looking at the pool we see that `AccountingToken` are minted in the `deposit(...)` function, in proportion to the deposited `LiquidityToken` which is the `DVL` token. We also see that `AccountingToken` are burned in the `withdraw(...)` function which, in addition to sending us our `RewardToken`, sends the `DVL` tokens back to us - allowing us to pay the flashloan.
+That was easy, but we still need to figure out how to get a positive balance of `AccountingToken`. Looking at the pool we see that `AccountingToken` are minted in the `deposit(...)` function, in proportion to the deposited `LiquidityToken` which is the `DVT` token. We also see that `AccountingToken` are burned in the `withdraw(...)` function which, in addition to sending us our `RewardToken`, sends the `DVT` tokens back to us - allowing us to pay the flashloan.
 
-We know have a clear picture of how to get `RewardToken`, and since we already know how to get our hands in free `DVL` tokens, we have all the information we need.
+We know have a clear picture of how to get `RewardToken`, and since we already know how to get our hands in free `DVT` tokens, we have all the information we need.
 
 Let's recap what we know:
 1. We know we have to get some amount of `RewardToken` to pass the challenge;
@@ -82,10 +86,40 @@ Let's recap what we know:
     - Have never received a reward;
 4. To clear the verifications in the previous step, we need to:
     - Wait 5 days;
-    - Deposit DVL tokens in the pool;
-5. We have no DVL tokens, but we know how to get them for free provided we pay them back - which we can, since we can call the pool `withdraw(...)` function which will give us our `DVL` tokens back after we have successfully gotten our `RewardToken` rewards;
+    - Deposit DVT tokens in the pool;
+5. We have no DVT tokens, but we know how to get them for free provided we pay them back - which we can, since we can call the pool `withdraw(...)` function which will give us our `DVT` tokens back after we have successfully gotten our `RewardToken` rewards;
 
 All that's left is implementing a `RewardAttacker` contract that does all the above for us.
+
+## SELFIE
+
+As per usual, this challenge involves a pool providing flashloans of 1.5 million `DVT` tokens. Our goal is to take them all.
+
+Fortunately, we can immediately see that the pool has a `drainAllFunds(...)` function, which sends all pool `DVT` tokens to the `address` passed as a parameter. Unfortunately for us, it can only be called by governance.
+
+`SelfiePool` is the first flashloan provider that has a governance mechanism attached to it, which, as stated in the challenge description, will be our way in.
+Looking into it we see that the `SimpleGovernance` contract allows for `actions` to be queued, provided they have enough votes. `_hasEnoughVotes()` checks that the `msg.sender` balance of `DVT` tokens is higher than half of the pool token balance.
+
+`SelfiePool` also allows for an `action` to be executed, provided it has never been executed before and two days have passed since being `queued`. During a given `action` execution, the `action.receiver` will be called using the `action.data` and `action.weiAmount` as the `call` function parameters. 
+
+While looking through the `SimpleGovernance` contract, you'll hopefully have noticed that there are pratically no access control mechanisms in place. This means that, as long as we can bypass `queueAction(...)` and `executeAction(...)` verifications, we are able to queue an `action` that will call the `SelfiePool` `drainAllFunds(...)` function and send them to us. It will work, because the call is coming from governance.
+
+To bypass `queueAction(...)` we need to have more than 750k `DVT` tokens at the time of the last `snapshot`. This is new - the pool implements an `ERC20Snapshot` version of the `DVT` token. Fortunately for us, anyone can take a `DVT` snapshot.
+
+However, we are only interested in taking a `snapshot` when we do have enough `DVT` tokens, which we can get by implementing a contract that gets a `SelfiePool` flashloan.
+
+All that's left is finding a way to bypass `executeAction(...)`, which is easily done by waiting two days!
+
+So, one way to solve this challenge is to:
+1. Implement a contract that is able to get a flashloan from the `SelfiePool` contract;
+2. Afer receiving the flashloan, take a `snapshot` and queue an `action` with:
+    - `data` to make a call to the `drainAllFunds(...)` with our address as a parameter;
+    - `receiver` as the `SelfiePool` address;
+    - `weiAmount` must be 0, unless you funded the attacker contract;
+3. Pay the flashloan back;
+4. Wait two days;
+5. Execute the action;
+
 
 
 ###### kyrers
