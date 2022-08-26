@@ -13,6 +13,7 @@ Relevant files are in each respective folder.
 
 [Selfie](#selfie)
 
+[Compromised](#compromised)
 
 ## UNSTOPPABLE
 
@@ -118,7 +119,35 @@ So, one way to solve this challenge is to:
     - `weiAmount` must be 0, unless you funded the attacker contract;
 3. Pay the flashloan back;
 4. Wait two days;
-5. Execute the action;
+5. Execute the action.
+
+## COMPROMISED
+
+To me, the hardest challenge so far. I had to use some guessing to get this to work. I'll explain my rationale below.
+
+The challenge setup is simple: We have an `Exchange` selling and buying `DVNTF` tokens at a `median price` obtained from averaging 4 `TrustfulOracle` price feeds.
+The goal is simple as well: Drain `Exchange` using only our 0.1 ETH.
+
+Looking at the contracts, I did not notice any obvious exploit. The only possible way to drain the `Exchange` contract that I found consisted of manipulating the `DVNFT` price.
+To that effect, the challenge description came in handy. This is where the guessing started. 
+
+Since it is called "Compromised" I assumed the leaked information from the `HTTP` response would contain some private keys.
+
+I looked at the leaked data and decided to convert it to a `string`. Unfortunately, that did not result in a private key. 
+Eventually, it occurred to me that the `string` I obtained may very well be encoded, as it is an `HTTP` response. 
+I used google and found out that often `HTTP` response data is `base64` encoded. So I converted the leaked data `string` using `base64`.
+At last, something that resembles a private key. I created wallets using the decoded leaked data and was happy to see that they corresponded to two trusted oracle addresses.
+
+After that, it was just a question of manipulating the price using the compromised oracles.
+
+Here's every step:
+1. Decode the leaked data and obtain two private keys;
+2. Create 2 wallets using the private keys obtained;
+3. Set the price to an affordable value. I used `0.005` ETH;
+4. Buy one `DVNFT` using the `attacker` account;
+5. Set the price to equal `Exchange` ETH balance;
+6. Sell the `attacker` `DVNFT`;
+7. Reset the price to the original value;
 
 
 

