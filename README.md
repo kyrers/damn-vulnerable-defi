@@ -17,6 +17,8 @@ Relevant files are in each respective folder.
 
 [Puppet](#puppet)
 
+[Puppet V2](#puppet-v2)
+
 ## UNSTOPPABLE
 
 If you're like me, your first instinct might be to drain the `pool`. 
@@ -177,5 +179,25 @@ To recap:
 3. Borrow them.
 
 It's this simple.
+
+## PUPPET-V2
+
+The set up of this challenge is very similar to the previous one. 
+
+The major differences are:
+1. The `PuppetV2Pool` now uses an `Uniswap V2` exchange to calculate the price;
+2. `WETH` is used instead of `ETH`;
+3. We are now required to deposit triple the borrow amount in `WETH` as collateral;
+
+Despite the challenge description mentioning that developers learned from the original `Puppet` implementation, and in fact this is a more secure implementation, the same problem remains.
+
+The `Uniswap V2` pair used to calculate the borrowing price still has low liquidity, meaning that users with sufficient amounts of either of the pair tokens can affect significant price swings.
+
+Luckily for us, our `attacker` has a significant amount of `DVT` tokens, meaning we can swing the price in our favor once again.
+
+So, the steps to solve this challenge are similar to the previous one:
+1. Swap the `attacker` `DVT` tokens for `ETH` using the `Uniswap V2` pair;
+2. Convert the `attacker` `ETH` to `WETH`;
+3. Borrow all `PuppetV2Pool` `DVT` tokens;
 
 ###### kyrers

