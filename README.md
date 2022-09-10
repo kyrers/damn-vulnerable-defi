@@ -15,6 +15,8 @@ Relevant files are in each respective folder.
 
 [Compromised](#compromised)
 
+[Puppet](#puppet)
+
 ## UNSTOPPABLE
 
 If you're like me, your first instinct might be to drain the `pool`. 
@@ -149,6 +151,31 @@ Here's every step:
 6. Sell the `attacker` `DVNFT`;
 7. Reset the price to the original value;
 
+## PUPPET
 
+This challenge is quite easy.
+
+There is a `PuppetPool` that allows users to borrow `DVT` tokens, as long as the user deposits double that amount in `ETH` as collateral. The pool has a balance of `100000 DVT`. Our goal is to get our hands on all of them.
+
+The pool uses an `Uniswap V1 DVT/ETH` pair to calculate the collateral needed. This pair starts with `10 ETH / 10 DVT` in liquidity.
+
+Lastly, our `attacker` starts with a balance of `25 ETH` and `1000 DVT`.
+
+Since there are no flashloans, our best option is to somehow lower the collateral needed to borrow the `100000 DVT` tokens from the `PuppetPool`.
+
+Looking at how the price is calculated we see the following equation `amount * _computeOraclePrice() * 2 / 10 ** 18;`. 
+
+Looking at the `_computeOraclePrice()` we see that the equation used is `uniswapPair.balance * (10 ** 18) / token.balanceOf(uniswapPair);`. This is problematic, because if the `Uniswap V1` exchange has a sufficiently larger balance of `DVT` tokens than `ETH`, the price to borrow tokens will decrease signficantly.
+
+Luckily for us, our attacker has `1000 DVT` tokens, so if we deposit these to the `Uniswap V1` exchange, our `25 ETH`, plus whatever `ETH` we receive from depositing to the `Uniswap V1` exchange, will be more than enough to borrow the `PuppetPool` `100000 DVT` tokens.
+
+The only detail we must not forget is that to pass the challenge the attacker `DVT` balance must be higher than the inital `100000 DVT` `PuppetPool` balance. This means we cannot deposit all of the attacker `1000 DVT` tokens to the `Uniswap V1` exchange.
+
+To recap:
+1. As the attacker, deposit an amount of `DVT` tokens large enough to lower the borrowing price to acceptable levels but less than 1000;
+2. Determine the amount of `ETH` needed as collateral to borrow the `PuppetPool` `100000 DVT` tokens;
+3. Borrow them.
+
+It's this simple.
 
 ###### kyrers

