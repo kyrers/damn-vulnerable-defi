@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.15;
 
-import "./NaiveReceiverLenderPool.sol";
-import "./FlashLoanReceiver.sol";
+import "../naive-receiver/NaiveReceiverLenderPool.sol";
+import "../naive-receiver/FlashLoanReceiver.sol";
 /**
  * @title Attacker
  * @author kyrers
  * @notice This contract just performs the attack for us. Instead of us sending 10 transactions to the pool, we can just send one to this contract
  */
 
-contract Attacker {
+contract NaiveReceiverAttacker {
 
     NaiveReceiverLenderPool private pool;
     FlashLoanReceiver private victim;

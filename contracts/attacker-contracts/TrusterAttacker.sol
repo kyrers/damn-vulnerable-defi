@@ -2,7 +2,7 @@
 pragma solidity ^0.8.15;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./TrusterLenderPool.sol";
+import "../truster/TrusterLenderPool.sol";
 
 /**
  * @title Attacker

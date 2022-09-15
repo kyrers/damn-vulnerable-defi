@@ -6,8 +6,8 @@ import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IWETH.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "./FreeRiderNFTMarketplace.sol";
-import "./FreeRiderBuyer.sol";
+import "../free-rider/FreeRiderNFTMarketplace.sol";
+import "../free-rider/FreeRiderBuyer.sol";
 import "../DamnValuableNFT.sol";
 
 
