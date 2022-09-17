@@ -20,6 +20,8 @@ Forked from the [original](https://github.com/tinchoabbate/damn-vulnerable-defi)
 
 [Free Rider](#free-rider)
 
+[Backdoor](#backdoor)
+
 ## UNSTOPPABLE
 
 If you're like me, your first instinct might be to drain the `pool`. 
@@ -226,6 +228,36 @@ Here's the full attack:
 4. Send them to the buyer;
 5. Pay the `flashswap` back;
 6. Send the all profits to the `attacker` account;
+
+# BACKDOOR
+
+This took me a long time to solve, the main reason being unfamiliarity with the `GnosisSafe` contracts. So don't take this explanation as a fact. It did involve a lot of trial and error, and maybe luck was a key factor.
+
+First things first - the challenge consists of 4 users that upon creating a `GnosisSafe` wallet according to the `WalletRegistry` specifications will receive `10 DVT` tokens. Our goal is to steal them all in one transaction.
+This is our first clue, we will need a smart contract to do the dirty work.
+
+Since I did not know the `GnosisSafe` contracts, I started by checking the setup for this challenge. Unexpectedly, it is quite easy. There are four contracts: `WalletRegistry`, `GnosisSafeProxyFactory` aka `walletFactory`, `GnosisSafe` aka `masterCopy`, and the `DamnValuableToken` contract. We also know who the allowed users are.
+
+Next, I decided to look through the contracts. `GnosisSafeProxyFactory` and `GnosisSafe` contracts do not contain code exploits as far as I can tell. `WalletRegistry` was the only contract left to check, and after spending more time than I care to admit looking for code exploits, I couldn't find one in this contract either.
+
+Not sure what to do, I decided to list what I found out while looking through the contracts:
+1. We know that `WalletRegistry` is the contract that has the tokens, so we'll have to execute the `proxyCreated(...)` function to get them;
+2. The `proxyCreated(...)` function makes sure that the wallet was created using the `GnosisSafe` `setup(...)` function;
+3. To execute the `proxyCreated(...)` function we have to create the wallet using `GnosisSafeProxyFactory createProxyWithCallback(...)` function;
+
+I decided to take a deeper look at the `createProxyWithCallback(...)` function, which has to be executed first.
+According to the comments, `createProxyWithCallback(...)` allows us to create a new `GnosisSafeProxy` and call it after it is initialized. It also allows us to call a specified `callback` function afterward.
+
+From that, I assumed two things: the `callback` must be the `WalletRegistry` `proxyCreated(...)` function and that this is how we reach the `GnosisSafe` `setup(...)` function.
+
+After making the above assumptions, I decided to look at the `setup(...)` function. I noticed two more things: some parameters weren't important and it also allows us to perform a `delegatecall` to a specified address.
+
+This looked promising. If I'm able to successfully pass the verifications on the `WalletRegistry` `proxyCreated(...)` function, I can then execute a `callback` defined by me on the `proxy` itself, which by now will have the `10 DVT` according to the `WalletRegistry` `proxyCreated(...)` function.
+
+All that was left was implementing the contract. Most of it was pretty easy, but I was having trouble with making a correct call to the `setup(...)`. 
+The `initializer` variable passed to the `createProxyWithCallback(...)` must contain the `setup(...)` function selector and parameters. Most of it can be ignored, but I was also ignoring the `threshold` parameter - which was a mistake. The `proxyCreated(...)` callback verifies that, so don't make the same mistake as I did.
+
+I realize that this isn't a very clear explanation. It might even contain errors. But it was most of my thought process until finally reaching a solution. I rather find a solution myself even if it involves luck and trial and error than simply copy someone else's. Besides, after solving this I looked online for explanations and couldn't find much better explanations. I did find contract improvements though, so there's that.
 
 
 ###### kyrers
