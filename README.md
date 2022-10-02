@@ -22,6 +22,9 @@ Forked from the [original](https://github.com/tinchoabbate/damn-vulnerable-defi)
 
 [Backdoor](#backdoor)
 
+[Climber](#climber)
+
+
 ## UNSTOPPABLE
 
 If you're like me, your first instinct might be to drain the `pool`. 
@@ -259,5 +262,41 @@ The `initializer` variable passed to the `createProxyWithCallback(...)` must con
 
 I realize that this isn't a very clear explanation. It might even contain errors. But it was most of my thought process until finally reaching a solution. I rather find a solution myself even if it involves luck and trial and error than simply copy someone else's. Besides, after solving this I looked online for explanations and couldn't find much better explanations. I did find contract improvements though, so there's that.
 
+# CLIMBER
+
+The goal of this challenge is clearly stated: steal 10 million `DTV` from the `ClimberVault` contract.
+
+We are also given a couple of extra hints:
+1. The `ClimberVault` is upgradeable, following the `UUPS` pattern;
+2. `ClimberVault` has the role of `Sweeper` which can sweep all funds from the vault;
+3. The owner of `ClimberVault` is the `ClimberTimelock` contract;
+4. The `ClimberTimelock` contract can withdraw a limited amount of tokens from the vault every 15 days;
+5. The `ClimberTimelock` contract allows accounts with the `Proposer` role to `schedule` actions that will be executed 1 hour later; 
+
+Since we are given so much information, I instantly assumed this would be a tough challenge.
+
+First I used my very limited knowledge of the `UUPS` pattern to look for a pattern error in the `ClimberVault` contract. However, it does have an empty constructor and instead is initialized by a `initialize` function. This is not the way in.
+
+I then tried to find a way to get the `Sweeper` role. I couldn't find any. If you can, let me know.
+
+However, while looking through the `ClimberTimelock` contract, I did notice that it has the role of `Admin` of itself, meaning it can grant the roles defined.
+I also noticed that anyone can call `execute()` to execute a proposal, as long as it has been scheduled. This function contains an enormous error, it only checks that a given proposal was ready for executing after executing it!
+
+This is the point at which I knew I was onto something. Theoretically, we could create a contract to execute a proposal that grants itself the `Proposer` role and transfers the ownership of the `ClimberVault` to an account controlled by us. After that, it would be a simple matter of creating a new `ClimberVault` that allows us to call the `sweepFunds()` function, and upgrading the proxy to use our new `ClimberVault`.
+
+While implementing the proposal I forgot one thing: we know from the challenge description that the delay to execute a proposal is 1 hour. Fortunately, we can just set it to 0 without any issue.
+
+Also, don't forget that even though the `checks-effects-interaction` pattern is violated, the `ClimberTimelock` does check that the proposal is ready to be executed, so we'll have to schedule it otherwise it will revert and the attack won't work. Plus, the proposal can't call the `schedule()` function itself because the parameters won't match. So, we need to set a task that calls a function in our attacker contract that schedules the task, which will work because we already have the `Proposer` role.
+
+So, to recap:
+1. Implement a `ClimberVault` version that allows us to call the `sweepFunds()` function;
+2. Create a contract that executes a proposal with the following tasks:
+    - Set the delay to 0;
+    - Grant the contract the proposer role;
+    - Transfer the ownership of the vault to our attacker account;
+    - Schedule the proposal;
+3. Execute the proposal;
+4. Update the proxy to use our `ClimberVault`
+5. Sweep the funds;
 
 ###### kyrers
