@@ -24,6 +24,8 @@ Forked from the [original](https://github.com/tinchoabbate/damn-vulnerable-defi)
 
 [Climber](#climber)
 
+[Safe Miners](#safe-miners)
+
 
 ## UNSTOPPABLE
 
@@ -298,5 +300,27 @@ So, to recap:
 3. Execute the proposal;
 4. Update the proxy to use our `ClimberVault`
 5. Sweep the funds;
+
+# SAFE-MINERS
+
+This is not an explanation of the solution, this is an unfiltered account of how I reached a solution. This is because I don't really understand this challenge. Then again, even the challenge description says it will be modified for a future version of damnvulnerabledefi.
+
+With that caveat, let me explain how I reached a solution.
+
+From the description, I immediately assumed I had to deploy a contract using the `attacker` to the specified address, because it clearly says that the address that has the tokens is empty.
+
+My first instinct was to use `CREATE2`, but then it occurred to me it probably would take eternities to find the correct salt to get that same address.
+
+So I decided to try brute forcing it first using `CREATE`, since paying for gas is not a concern in this scenario.
+
+My first attempt consisted of having the `attacker` deploy 100k contracts that just transferred the `DVT` tokens to the attacker. Not only did this take a long time, but it also didn't work.
+
+Since I am not sure how hardhat deploys contracts, I decided to give it another shot using a `SafeMinersAttackerFactory` to deploy the `SafeMinersAttacker` before giving up.
+
+At first, I tried having the factory deploy 1000 instances of the attacker until the `attacker` account had the tokens. This ran into an out-of-gas error because I, naively, forgot that there's a limit to the gas I can send to the contract.
+
+So I decided to modify how this would work. The `attacker` account would deploy a `SafeMinersAttackerFactory` that would create 500 instances of the `SafeMinersAttacker`. Then, if the `attacker` had the tokens, I would stop, otherwise, I would have the `attacker` deploy another factory.
+
+I was expecting this to run for a while, but since I had to leave for a while it was cool. If it didn't work, I would know brute forcing was the wrong approach. To my surprise, it worked on the second batch of 500 `SafeMinersAttacker` deployments.
 
 ###### kyrers

