@@ -321,6 +321,6 @@ At first, I tried having the factory deploy 1000 instances of the attacker until
 
 So I decided to modify how this would work. The `attacker` account would deploy a `SafeMinersAttackerFactory` that would create 500 instances of the `SafeMinersAttacker`. Then, if the `attacker` had the tokens, I would stop, otherwise, I would have the `attacker` deploy another factory.
 
-I was expecting this to run for a while, but since I had to leave for a while it was cool. If it didn't work, I would know brute forcing was the wrong approach. To my surprise, it worked on the second batch of 500 `SafeMinersAttacker` deployments.
+I was expecting this to run for a while, but since I had to leave for a while it was cool. If it didn't work, I would know brute force was the wrong approach. To my surprise, it worked on the second batch of 500 `SafeMinersAttacker` deployments.
 
 ###### kyrers
